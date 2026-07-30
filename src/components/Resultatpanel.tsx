@@ -206,6 +206,36 @@ export function Resultatpanel({ resultat }: { resultat: Analysresultat }) {
         </table>
       </div>
 
+      {resultat.innermatt.length > 0 && (
+        <>
+          <h3 style={{ fontSize: 14, margin: '20px 0 8px' }}>Invändiga fria mått</h3>
+          <div className="tabellsvep">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mått</th>
+                  <th className="num">Fritt mått (m)</th>
+                  <th>Kommentar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resultat.innermatt.map((m) => (
+                  <tr key={m.id}>
+                    <td>{m.etikett}</td>
+                    <td className="num">{tal(m.varde, 2)}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{m.kommentar ?? ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="kalla">
+            Måtten är fria mått mellan virkets ytor. Golvbeläggning, undertak, isolering och
+            invändiga ytskikt är inte avdragna.
+          </p>
+        </>
+      )}
+
       <h3 style={{ fontSize: 14, margin: '20px 0 8px' }}>Virkesåtgång per takstol</h3>
       <div className="tabellsvep">
         <table>

@@ -20,6 +20,11 @@ stång enligt Eurokod 5. Allt körs i webbläsaren – ingen server behövs.
 - **Skiss** som ritas om direkt när indata ändras, med virket i verklig
   tvärsnittshöjd, måttsättning, upplagssymboler och vylägen för utnyttjandegrad,
   normalkraft, böjmoment, tvärkraft, deformation och laster.
+- **Invändiga fria mått** som kan tändas och släckas i skissen: rumsbredd mellan
+  stödben, fri höjd under hanbjälken, knäväggshöjd, fri höjd i nock och bredden
+  där ståhöjd uppnås. Måtten är ljusa mått mellan virkets ytor – halva
+  tvärsnittshöjden dras bort på varje begränsande stång – och redovisas även som
+  tabell under fliken Resultat.
 - **Snölast** enligt SS-EN 1991-1-3 med snözon, formfaktor, exponeringsfaktor och
   de tre lastfallen för sadeltak, inklusive de osymmetriska.
 - **Virkeskvalitet** – C14–C35 enligt SS-EN 338 och GL28c–GL30h enligt

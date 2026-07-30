@@ -22,6 +22,7 @@ interface Props {
   resultat: Analysresultat;
   lage: Visningslage;
   visaBeteckningar: boolean;
+  visaInnermatt: boolean;
 }
 
 interface Ritdata {
@@ -155,7 +156,69 @@ function Mattlinje({
   );
 }
 
-export function Takstolsskiss({ resultat, lage, visaBeteckningar }: Props) {
+/**
+ * Invändigt fritt mått, ritat inuti takstolen med måttpilar i båda ändar.
+ * Ritas i en egen färg så att det inte förväxlas med yttermåtten.
+ */
+function Innermattlinje({
+  x1,
+  y1,
+  x2,
+  y2,
+  text,
+  vertikal,
+  etikettUnder = false,
+}: {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  text: string;
+  vertikal: boolean;
+  /** Lägg etiketten under måttlinjen i stället för över */
+  etikettUnder?: boolean;
+}) {
+  // Stängernas egna etiketter sitter alltid på mittpunkten, så måttetiketten
+  // läggs en bit vid sidan om för att inte hamna ovanpå dem
+  const mx = vertikal ? (x1 + x2) / 2 : x1 + 0.34 * (x2 - x1);
+  const my = vertikal ? (y1 + y2) / 2 : (y1 + y2) / 2;
+  const pil = 4.5;
+  return (
+    <g stroke="var(--series-3)" strokeWidth={1.2} fill="none">
+      <line x1={x1} y1={y1} x2={x2} y2={y2} />
+      {/* Ändmarkeringar vinkelrätt mot måttlinjen */}
+      {[
+        [x1, y1],
+        [x2, y2],
+      ].map(([px, py], i) => (
+        <line
+          key={i}
+          x1={vertikal ? px - pil : px}
+          y1={vertikal ? py : py - pil}
+          x2={vertikal ? px + pil : px}
+          y2={vertikal ? py : py + pil}
+        />
+      ))}
+      <text
+        x={vertikal ? mx + 7 : mx}
+        y={vertikal ? my : my + (etikettUnder ? 13 : -5)}
+        textAnchor={vertikal ? 'start' : 'middle'}
+        dominantBaseline={vertikal ? 'middle' : 'auto'}
+        fill="var(--series-3)"
+        stroke="var(--surface-1)"
+        strokeWidth={2.8}
+        paintOrder="stroke"
+        fontSize={11}
+        fontWeight={600}
+        fontFamily="var(--font)"
+      >
+        {text}
+      </text>
+    </g>
+  );
+}
+
+export function Takstolsskiss({ resultat, lage, visaBeteckningar, visaInnermatt }: Props) {
   const geo = resultat.geometri;
   const [hovrad, setHovrad] = useState<string | null>(null);
   const r = useMemo(() => ritdataFor(geo), [geo]);
@@ -418,6 +481,23 @@ export function Takstolsskiss({ resultat, lage, visaBeteckningar }: Props) {
           {tal(lutningGrader, 0)}°
         </text>
       </g>
+
+      {/* Invändiga fria mått */}
+      {visaInnermatt &&
+        resultat.innermatt.map((m) => (
+          <Innermattlinje
+            key={m.id}
+            x1={r.X(m.fran.x)}
+            y1={r.Y(m.fran.y)}
+            x2={r.X(m.till.x)}
+            y2={r.Y(m.till.y)}
+            text={`${tal(m.varde, 2)} m`}
+            vertikal={m.orientering === 'vertikal'}
+            // Högt sittande vågräta mått får etiketten under linjen, annars
+            // hamnar den ovanpå hanbjälken eller sparren
+            etikettUnder={m.orientering === 'horisontell' && m.fran.y > geo.maxY * 0.55}
+          />
+        ))}
 
       {/* Beteckningar */}
       {visaBeteckningar &&

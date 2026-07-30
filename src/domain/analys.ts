@@ -47,6 +47,7 @@ import {
   type Kontrollresultat,
   type Kontrolltyp,
 } from './ec5';
+import { beraknaInnermatt, type Innermatt } from './innermatt';
 import { berakVindlast, type Terrangtyp, type Vindresultat } from './vind';
 
 export interface Sektionsval {
@@ -396,6 +397,8 @@ export interface Analysresultat {
   /** Nodförskjutningar för den karakteristiska kombinationen, m */
   deformation: { ux: number; uy: number }[];
   virkesatgang: { typ: StangTyp; langd: number; dimension: string; kvalitet: string }[];
+  /** Invändiga fria mått, ljusa mått mellan virkets ytor */
+  innermatt: Innermatt[];
 }
 
 function faktorForLastfall(komb: Lastkombination, id: LastfallId): number {
@@ -792,6 +795,7 @@ export function analysera(indata: Indata): Analysresultat {
     snittkurvor,
     deformation,
     virkesatgang: [...virkesatgangMap.values()],
+    innermatt: beraknaInnermatt(geo, indata.geometri, (typ) => sektionFor(indata, typ).dim.h / 1000),
   };
 }
 
