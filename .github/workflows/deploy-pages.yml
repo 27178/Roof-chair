@@ -1,0 +1,64 @@
+name: Publicera till GitHub Pages
+
+# Kräver att Pages är aktiverat i repots inställningar:
+# Settings → Pages → Build and deployment → Source: GitHub Actions
+#
+# Applikationen är helt statisk, så bygget läggs som en Pages-artefakt utan
+# någon server. vite.config.ts använder base: './' vilket gör att sidan
+# fungerar både på en projektsida (/Roof-chair/) och på en egen domän.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Låt en pågående publicering bli klar, men köa bara den senaste därefter
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  bygg:
+    name: Bygg
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Installera beroenden
+        run: npm ci
+
+      - name: Kör enhetstester
+        run: npm test
+
+      - name: Bygg
+        run: npm run build
+
+      - name: Konfigurera Pages
+        uses: actions/configure-pages@v5
+
+      - name: Ladda upp artefakt
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  publicera:
+    name: Publicera
+    needs: bygg
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicera till GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
