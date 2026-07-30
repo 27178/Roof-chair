@@ -6,7 +6,14 @@ import {
   STANDARDINDATA,
   type Indata,
 } from './analys';
-import { byggGeometri, MODELLER, STANDARDPARAMETRAR, stangLangd, type Konstruktionsmodell } from './geometri';
+import {
+  byggGeometri,
+  MODELLER,
+  STANDARDPARAMETRAR,
+  stangLangd,
+  type Konstruktionsmodell,
+  type StangTyp,
+} from './geometri';
 import { berakSnolast, formfaktorMu1, gammaD, genereraKombinationer, NYTTIGLASTER, snoPsi } from './loads';
 import { dimensioneringsvarden, knackning } from './ec5';
 import { hittaKvalitet, kmod, STANDARDDIMENSIONER } from './materials';
@@ -262,6 +269,22 @@ describe('Automatisk dimensionering', () => {
     expect(upplag.kontroll.utnyttjande).toBeGreaterThan(1);
     expect(upplag.erforderligUpplagslangd).toBeGreaterThan(45);
     expect(res.varningar.some((v) => v.includes('Upplagslängden'))).toBe(true);
+  });
+
+  it('hittar dimensioner för samtliga konstruktionsmodeller', () => {
+    const dimensioner = Object.fromEntries(
+      (
+        ['overram', 'underram', 'diagonal', 'stolpe', 'hanbjalke', 'stodben', 'taksprang'] as const
+      ).map((t) => [t, STANDARDDIMENSIONER.filter((d) => d.b >= 45)]),
+    ) as Record<StangTyp, typeof STANDARDDIMENSIONER>;
+
+    for (const m of MODELLER) {
+      const auto = autodimensionera(indataFor(m.id), dimensioner);
+      expect(auto.lyckades, `${m.namn} gick inte att dimensionera`).toBe(true);
+      expect(auto.resultat.maxUtnyttjandeBarverk).toBeLessThanOrEqual(1.0);
+      // Ingen stång ska kräva orimligt grovt virke för ett vanligt fall
+      expect(auto.sektioner.overram.dim.h).toBeLessThanOrEqual(245);
+    }
   });
 
   it('kräver grövre virke vid högre snölast', () => {

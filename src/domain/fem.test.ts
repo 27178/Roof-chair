@@ -159,7 +159,6 @@ describe('FEM: enkelt fackverk', () => {
 describe('FEM: jämviktskontroll', () => {
   it('summan av reaktioner motsvarar pålagd last', () => {
     const w = 2.5;
-    const L = 8;
     const modell: FemModell = {
       noder: [
         { x: 0, y: 0 },

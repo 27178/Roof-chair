@@ -22,7 +22,6 @@ import {
   snoPsi,
   type Exponering,
   type Lastkombination,
-  type Lasttyp,
   type Nyttiglast,
   type Sakerhetsklass,
   type Snolastresultat,
@@ -114,15 +113,19 @@ export const STANDARDINDATA: Omit<Indata, 'geometri' | 'sektioner'> = {
   upplagslangd: 170,
 };
 
+/**
+ * Utgångsdimensioner i C24. Värdena motsvarar en automatiskt dimensionerad
+ * W-takstol med 9 m spännvidd i snözon 2,0 kN/m² och c/c 1,2 m.
+ */
 export function standardSektioner(): Record<StangTyp, Sektionsval> {
   return {
-    overram: { kvalitet: 'C24', dim: { b: 45, h: 145 } },
+    overram: { kvalitet: 'C24', dim: { b: 45, h: 170 } },
     underram: { kvalitet: 'C24', dim: { b: 45, h: 145 } },
-    diagonal: { kvalitet: 'C24', dim: { b: 45, h: 95 } },
-    stolpe: { kvalitet: 'C24', dim: { b: 45, h: 95 } },
-    hanbjalke: { kvalitet: 'C24', dim: { b: 45, h: 145 } },
-    stodben: { kvalitet: 'C24', dim: { b: 45, h: 120 } },
-    taksprang: { kvalitet: 'C24', dim: { b: 45, h: 145 } },
+    diagonal: { kvalitet: 'C24', dim: { b: 45, h: 120 } },
+    stolpe: { kvalitet: 'C24', dim: { b: 45, h: 120 } },
+    hanbjalke: { kvalitet: 'C24', dim: { b: 45, h: 170 } },
+    stodben: { kvalitet: 'C24', dim: { b: 45, h: 145 } },
+    taksprang: { kvalitet: 'C24', dim: { b: 45, h: 170 } },
   };
 }
 
@@ -707,6 +710,11 @@ export function analysera(indata: Indata): Analysresultat {
   if (varstUpplag.kontroll.utnyttjande > 1.0) {
     varningar.push(
       `Trycket vinkelrätt fibrerna vid upplaget överskrids (${(varstUpplag.kontroll.utnyttjande * 100).toFixed(0)} %). Upplagslängden behöver ökas till minst ${Math.ceil(varstUpplag.erforderligUpplagslangd / 10) * 10} mm, alternativt används en tryckfördelande upplagsplatta eller grövre underram.`,
+    );
+  }
+  if (geo.modell === 'pulpet' && indata.geometri.taklutning > 20) {
+    varningar.push(
+      'Pulpettakstolar utförs normalt med 5–14° taklutning. Med brantare lutning blir stolpen vid den höga sidan lång och tryckt, och den behöver då stagas i sidled eller ersättas med en pelare.',
     );
   }
   if (geo.modell === 'sax') {

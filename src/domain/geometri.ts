@@ -95,7 +95,7 @@ export const MODELLER: ModellInfo[] = [
     id: 'pulpet',
     namn: 'Pulpettakstol',
     beskrivning:
-      'Enkelsluttande takstol med horisontell underram. Används vid enkelsidigt fall, ofta mot en högre byggnadsdel.',
+      'Enkelsluttande takstol med horisontell underram. Används vid enkelsidigt fall, ofta mot en högre byggnadsdel. Utförs normalt med 5–14° taklutning.',
     spannviddsintervall: [3, 12],
     anvandning: 'Uthus, garage, tillbyggnader och skärmtak.',
     verkningssatt: 'Fackverk med enkelsidig lutning',
@@ -160,9 +160,10 @@ export interface GeometriParametrar {
   antalFack: number;
   /** Hanbjälkens höjd över underramen, m (ramverk och samverkan) */
   hanbjalkeHojd: number;
-  /** Stödbenens avstånd från upplaget, m (samverkan) */
-  stodbenAvstand: number;
-  /** Stödbenens höjd, m (samverkan) */
+  /**
+   * Stödbenens höjd, m (samverkan). Stödbenen är lodräta och möter sparren,
+   * vilket gör att deras avstånd från upplaget följer av höjden och taklutningen.
+   */
   stodbenHojd: number;
   /** Underramens lutning, grader (saxtakstol) */
   saxLutning: number;
@@ -178,11 +179,29 @@ export const STANDARDPARAMETRAR: GeometriParametrar = {
   taksprang: 0.4,
   antalFack: 2,
   hanbjalkeHojd: 2.4,
-  stodbenAvstand: 1.2,
-  stodbenHojd: 1.8,
+  stodbenHojd: 1.5,
   saxLutning: 14,
   parallellHojd: 0.6,
 };
+
+/**
+ * Rummets bredd mellan stödbenen i en samverkanstakstol, m.
+ * Stödbenen är lodräta och möter sparren på höjden hStod, vilket ger
+ * avståndet hStod/tan(α) från upplaget.
+ */
+export function rumsbredd(p: GeometriParametrar): number {
+  const halv = p.spannvidd / 2;
+  const x = stodbensAvstand(p);
+  return Math.max(0, 2 * (halv - x));
+}
+
+/** Stödbenets horisontella avstånd från upplaget, m. */
+export function stodbensAvstand(p: GeometriParametrar): number {
+  const halv = p.spannvidd / 2;
+  const H = halv * Math.tan(rad(p.taklutning));
+  const hStod = Math.min(Math.max(p.stodbenHojd, 0.3), H * 0.8);
+  return Math.min(hStod / Math.tan(rad(p.taklutning)), halv - 0.5);
+}
 
 const rad = (grader: number) => (grader * Math.PI) / 180;
 
@@ -405,20 +424,21 @@ function byggSamverkan(p: GeometriParametrar): TakstolGeometri {
   const L = p.spannvidd;
   const halv = L / 2;
   const H = halv * Math.tan(rad(p.taklutning));
-  const a = Math.min(Math.max(p.stodbenAvstand, 0.3), halv - 0.5);
-  const hStod = Math.min(p.stodbenHojd, H * 0.8);
-  const hHan = Math.min(Math.max(p.hanbjalkeHojd, hStod + 0.2), H * 0.9);
-  const xStodTopp = a + hStod / Math.tan(rad(p.taklutning));
-  const xHan = hHan / Math.tan(rad(p.taklutning));
+  // Stödbenen är lodräta: de möter sparren på höjden hStod, vilket låser
+  // deras horisontella läge till hStod/tan(α).
+  const x = stodbensAvstand(p);
+  const hStod = x * Math.tan(rad(p.taklutning));
+  const hHan = Math.min(Math.max(p.hanbjalkeHojd, hStod + 0.3), H * 0.9);
+  const xHan = Math.min(hHan / Math.tan(rad(p.taklutning)), halv - 0.25);
 
   const noder: Nod[] = [
     { x: 0, y: 0, etikett: 'A' },
     { x: L, y: 0, etikett: 'B' },
     { x: halv, y: H, etikett: 'Nock' },
-    { x: a, y: 0 }, // 3 stödbensfot v
-    { x: L - a, y: 0 }, // 4 stödbensfot h
-    { x: xStodTopp, y: hStod }, // 5 stödbenstopp v
-    { x: L - xStodTopp, y: hStod }, // 6 stödbenstopp h
+    { x, y: 0 }, // 3 stödbensfot v
+    { x: L - x, y: 0 }, // 4 stödbensfot h
+    { x, y: hStod }, // 5 stödbenstopp v
+    { x: L - x, y: hStod }, // 6 stödbenstopp h
     { x: xHan, y: hHan }, // 7 hanbjälke v
     { x: L - xHan, y: hHan }, // 8 hanbjälke h
     { x: halv, y: 0, etikett: 'Mitt' }, // 9
@@ -485,13 +505,20 @@ function byggSax(p: GeometriParametrar): TakstolGeometri {
   return avsluta('sax', noder, stanger, [0, 1], L, H);
 }
 
-/** Parallelltakstol – över- och underram med samma lutning. */
+/**
+ * Parallelltakstol – sadelformad med över- och underram som följer samma
+ * lutning och konstant konstruktionshöjd. Ger snedtak med plats för isolering.
+ */
 function byggParallell(p: GeometriParametrar): TakstolGeometri {
   const L = p.spannvidd;
+  const halv = L / 2;
   const alfa = rad(p.taklutning);
-  const H = L * Math.tan(alfa);
+  const H = halv * Math.tan(alfa);
   const hK = Math.max(p.parallellHojd, 0.2);
-  const m = Math.max(2, Math.min(8, Math.round(p.antalFack * 2)));
+  // Jämnt antal fack så att en knutpunkt hamnar i nocken
+  const m = Math.max(2, Math.min(10, Math.round(p.antalFack) * 2));
+
+  const underramsprofil = (x: number) => (x <= halv ? x : L - x) * Math.tan(alfa);
 
   const noder: Nod[] = [];
   const overram: number[] = [];
@@ -499,19 +526,18 @@ function byggParallell(p: GeometriParametrar): TakstolGeometri {
 
   for (let i = 0; i <= m; i++) {
     const x = (i / m) * L;
-    const yTop = x * Math.tan(alfa);
-    noder.push({ x, y: yTop });
-    overram.push(noder.length - 1);
-    noder.push({ x, y: yTop - hK });
+    const yUnder = underramsprofil(x);
+    noder.push({ x, y: yUnder, etikett: i === m / 2 ? 'Nock' : undefined });
     underram.push(noder.length - 1);
+    noder.push({ x, y: yUnder + hK });
+    overram.push(noder.length - 1);
   }
 
   const stanger: Stang[] = [];
   for (let i = 0; i < m; i++) {
+    const sida = i < m / 2 ? 'vanster' : 'hoger';
     stanger.push(
-      nyStang('overram', `Överram ${i + 1}`, overram[i], overram[i + 1], false, {
-        takfall: 'vanster',
-      }),
+      nyStang('overram', `Överram ${i + 1}`, overram[i], overram[i + 1], false, { takfall: sida }),
     );
     stanger.push(
       nyStang('underram', `Underram ${i + 1}`, underram[i], underram[i + 1], false, {
@@ -523,19 +549,16 @@ function byggParallell(p: GeometriParametrar): TakstolGeometri {
     stanger.push(nyStang('stolpe', `Stolpe ${i + 1}`, underram[i], overram[i], true));
   }
   for (let i = 0; i < m; i++) {
-    // Diagonaler i N-mönster, vända mot mitten
+    // Diagonalerna riktas så att de får dragkraft och stolparna tryckkraft
+    // (Pratt-mönster), vilket ger de klenaste dimensionerna.
     if (i < m / 2) {
-      stanger.push(nyStang('diagonal', `Diagonal ${i + 1}`, underram[i], overram[i + 1], true));
-    } else {
       stanger.push(nyStang('diagonal', `Diagonal ${i + 1}`, overram[i], underram[i + 1], true));
+    } else {
+      stanger.push(nyStang('diagonal', `Diagonal ${i + 1}`, underram[i], overram[i + 1], true));
     }
   }
 
-  // Upplag i under-/överramens ändar
-  const vansterUpplag = underram[0];
-  const hogerUpplag = underram[m];
-
-  return avsluta('parallell', noder, stanger, [vansterUpplag, hogerUpplag], L, H);
+  return avsluta('parallell', noder, stanger, [underram[0], underram[m]], L, H + hK);
 }
 
 /** Pulpettakstol – enkelsidig lutning med horisontell underram. */
@@ -550,6 +573,13 @@ function byggPulpet(p: GeometriParametrar): TakstolGeometri {
   const underram: number[] = [];
   for (let i = 0; i <= m; i++) {
     const x = (i / m) * L;
+    if (i === 0) {
+      // I takfoten möts över- och underram i samma knutpunkt
+      noder.push({ x: 0, y: 0, etikett: 'Takfot' });
+      overram.push(noder.length - 1);
+      underram.push(noder.length - 1);
+      continue;
+    }
     noder.push({ x, y: x * Math.tan(alfa) });
     overram.push(noder.length - 1);
     noder.push({ x, y: 0 });
