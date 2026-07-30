@@ -4,6 +4,7 @@ import {
   autodimensionera,
   standardSektioner,
   STANDARDINDATA,
+  VALBARA_STANGTYPER,
   type Analysresultat,
   type Indata,
 } from './domain/analys';
@@ -80,7 +81,8 @@ export default function App() {
     try {
       const geo = byggGeometri(indata.geometri);
       const typer = new Set<StangTyp>(geo.stanger.map((s) => s.typ));
-      return [...typer];
+      // Taksprånget följer överramen och väljs inte separat
+      return VALBARA_STANGTYPER.filter((t) => typer.has(t));
     } catch {
       return [] as StangTyp[];
     }

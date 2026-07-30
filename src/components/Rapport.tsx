@@ -1,5 +1,5 @@
 import type { Analysresultat, Indata } from '../domain/analys';
-import { klimatklassNamn } from '../domain/analys';
+import { klimatklassNamn, sektionFor } from '../domain/analys';
 import { KONTROLL_NAMN } from '../domain/ec5';
 import { modellInfo, STANGTYP_NAMN } from '../domain/geometri';
 import { SAKERHETSKLASS_TEXT } from '../domain/loads';
@@ -69,7 +69,7 @@ export function Rapport({ resultat, indata }: { resultat: Analysresultat; indata
           </thead>
           <tbody>
             {[...new Set(resultat.stanger.map((s) => s.typ))].map((typ) => {
-              const sekt = indata.sektioner[typ];
+              const sekt = sektionFor(indata, typ);
               const g = hittaKvalitet(sekt.kvalitet);
               return (
                 <tr key={typ}>

@@ -428,8 +428,12 @@ export function Takstolsskiss({ resultat, lage, visaBeteckningar }: Props) {
           const dx = r.X(b.x) - r.X(a.x);
           const dy = r.Y(b.y) - r.Y(a.y);
           const len = Math.hypot(dx, dy) || 1;
-          // Etiketten läggs vid sidan av stången så att den inte döljs av virket
-          const avstand = Math.max((k?.dim.h ?? 145) / 1000 / 2, 0.05) * r.skala + 9;
+          // Etiketten läggs vid sidan av stången så att den inte döljs av virket.
+          // Taksprånget får etiketten på ovansidan så att den inte hamnar över
+          // upplagssymbolen.
+          const sida = s.typ === 'taksprang' ? -1 : 1;
+          const avstand =
+            (Math.max((k?.dim.h ?? 145) / 1000 / 2, 0.05) * r.skala + 9) * sida;
           return (
             <text
               key={`t-${s.id}`}

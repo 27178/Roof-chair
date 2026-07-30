@@ -129,6 +129,24 @@ export function standardSektioner(): Record<StangTyp, Sektionsval> {
   };
 }
 
+/**
+ * Taksprånget är en förlängning av samma virkesstycke som överramen och får
+ * därför alltid överramens tvärsnitt.
+ */
+export function sektionFor(indata: Indata, typ: StangTyp): Sektionsval {
+  return typ === 'taksprang' ? indata.sektioner.overram : indata.sektioner[typ];
+}
+
+/** Stångtyper som kan väljas fritt av användaren. */
+export const VALBARA_STANGTYPER: StangTyp[] = [
+  'overram',
+  'underram',
+  'diagonal',
+  'stolpe',
+  'hanbjalke',
+  'stodben',
+];
+
 type LastfallId = 'egentyngd' | 'sno0' | 'sno1' | 'sno2' | 'nyttig' | 'vind';
 
 const SNOLASTFALL: LastfallId[] = ['sno0', 'sno1', 'sno2'];
@@ -188,7 +206,7 @@ function byggModell(
   lastfall: LastfallId,
 ): FemModell {
   const element: FemElement[] = geo.stanger.map((s) => {
-    const sekt = indata.sektioner[s.typ];
+    const sekt = sektionFor(indata, s.typ);
     const grade = hittaKvalitet(sekt.kvalitet);
     const { EA, EI } = elementstyvhet(grade, sekt.dim);
     const { c, s: sinus } = riktning(geo, s);
@@ -267,7 +285,7 @@ export function sammanstallLaster(geo: TakstolGeometri, indata: Indata): Lastsam
 
   let egentyngdVirke = 0;
   for (const s of geo.stanger) {
-    const sekt = indata.sektioner[s.typ];
+    const sekt = sektionFor(indata, s.typ);
     const grade = hittaKvalitet(sekt.kvalitet);
     egentyngdVirke += egentyngdPerMeter(sekt.dim, grade) * stangLangd(geo, s) * s.antal;
   }
@@ -442,7 +460,7 @@ export function analysera(indata: Indata): Analysresultat {
   const snittkurvor: Analysresultat['snittkurvor'] = [];
 
   geo.stanger.forEach((stang, elementIndex) => {
-    const sekt = indata.sektioner[stang.typ];
+    const sekt = sektionFor(indata, stang.typ);
     const grade = hittaKvalitet(sekt.kvalitet);
     const { lcY, lcZ, lef } = knacklangder(geo, stang, indata);
     const knack = knackning(grade, sekt.dim, lcY, lcZ);
@@ -725,7 +743,7 @@ export function analysera(indata: Indata): Analysresultat {
 
   const virkesatgangMap = new Map<string, { typ: StangTyp; langd: number; dimension: string; kvalitet: string }>();
   for (const s of geo.stanger) {
-    const sekt = indata.sektioner[s.typ];
+    const sekt = sektionFor(indata, s.typ);
     const nyckel = `${s.typ}-${dimensionNamn(sekt.dim)}-${sekt.kvalitet}`;
     const post = virkesatgangMap.get(nyckel) ?? {
       typ: s.typ,
@@ -808,6 +826,8 @@ export function autodimensionera(
       const lista = tillgangligaDimensioner[t];
       s[t] = { kvalitet: indata.sektioner[t].kvalitet, dim: lista[Math.min(index[t], lista.length - 1)] };
     }
+    // Taksprånget är samma virke som överramen
+    s.taksprang = s.overram;
     return s;
   };
 
@@ -830,8 +850,10 @@ export function autodimensionera(
 
     let andrad = false;
     for (const [typ, utnyttjande] of behov) {
-      if (utnyttjande > 1.0 && index[typ] < tillgangligaDimensioner[typ].length - 1) {
-        index[typ] += 1;
+      // Taksprånget följer överramen och söks inte separat
+      const malTyp: StangTyp = typ === 'taksprang' ? 'overram' : typ;
+      if (utnyttjande > 1.0 && index[malTyp] < tillgangligaDimensioner[malTyp].length - 1) {
+        index[malTyp] += 1;
         andrad = true;
       }
     }
@@ -885,7 +907,9 @@ export function byggKombinationsmatris(
       celler.push({
         kvalitet,
         sk,
-        maxUtnyttjande: auto.resultat.maxUtnyttjande,
+        // Upplagstrycket styrs av upplagslängden och ingår inte i sökningen,
+        // så cellen redovisar utnyttjandet för stänger och nedböjning.
+        maxUtnyttjande: auto.resultat.maxUtnyttjandeBarverk,
         godkand: auto.lyckades,
         avgorande: auto.resultat.nedbojning.utnyttjandeSlutlig > avgorandeStang.utnyttjande
           ? 'Nedböjning'
