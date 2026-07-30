@@ -713,7 +713,7 @@ export function analysera(indata: Indata): Analysresultat {
   }
   if (indata.sk >= 3 && indata.cc > 1.2) {
     varningar.push(
-      'Vid hög snölast bör centrumavståndet mellan takstolarna normalt inte överstiga 1,2 m.',
+      'Vid hög snölast bör centrumavståndet mellan takstolarna normalt inte överstiga 1 200 mm.',
     );
   }
   if (nedbojning.horisontellRorelse > 15) {

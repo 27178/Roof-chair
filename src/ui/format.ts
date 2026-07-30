@@ -12,6 +12,29 @@ export function procent(v: number, decimaler = 0): string {
   return `${tal(v * 100, decimaler)} %`;
 }
 
+/**
+ * Längd i millimeter med tusentalsavgränsare, angiven från ett värde i meter.
+ * Byggritningar måttsätts i millimeter, så gränssnittet redovisar alla längder
+ * så även om beräkningskärnan räknar i meter.
+ */
+export function mm(meter: number, decimaler = 0): string {
+  if (!Number.isFinite(meter)) return '–';
+  return (meter * 1000).toLocaleString('sv-SE', {
+    minimumFractionDigits: decimaler,
+    maximumFractionDigits: decimaler,
+  });
+}
+
+/** Millimetervärde till meter, avrundat till hel millimeter. */
+export function millimeterTillMeter(millimeter: number): number {
+  return Math.round(millimeter) / 1000;
+}
+
+/** Meter till hel millimeter, för inmatningsfält. */
+export function meterTillMillimeter(meter: number): number {
+  return Math.round(meter * 1000);
+}
+
 export type Statusband = 'good' | 'warning' | 'serious' | 'critical';
 
 /**

@@ -4,7 +4,7 @@ import { KONTROLL_NAMN } from '../domain/ec5';
 import { modellInfo, STANGTYP_NAMN } from '../domain/geometri';
 import { SAKERHETSKLASS_TEXT } from '../domain/loads';
 import { hittaKvalitet } from '../domain/materials';
-import { STATUSTEXT, statusband, tal } from '../ui/format';
+import { mm, STATUSTEXT, statusband, tal } from '../ui/format';
 
 export function Rapport({ resultat, indata }: { resultat: Analysresultat; indata: Indata }) {
   const info = modellInfo(indata.geometri.modell);
@@ -20,15 +20,15 @@ export function Rapport({ resultat, indata }: { resultat: Analysresultat; indata
         <dt>Verkningssätt</dt>
         <dd>{info.verkningssatt}</dd>
         <dt>Spännvidd</dt>
-        <dd>{tal(resultat.geometri.spannvidd, 2)} m</dd>
+        <dd>{mm(resultat.geometri.spannvidd)} mm</dd>
         <dt>Taklutning</dt>
         <dd>
           {tal(indata.geometri.taklutning, 1)}° / {tal(indata.geometri.taklutningHoger, 1)}°
         </dd>
         <dt>Nockhöjd över underram</dt>
-        <dd>{tal(resultat.geometri.nockhojd, 2)} m</dd>
+        <dd>{mm(resultat.geometri.nockhojd)} mm</dd>
         <dt>Takstolsavstånd</dt>
-        <dd>{tal(indata.cc, 2)} m</dd>
+        <dd>{mm(indata.cc)} mm</dd>
         <dt>Säkerhetsklass</dt>
         <dd>{SAKERHETSKLASS_TEXT[indata.sakerhetsklass]}</dd>
         <dt>Klimatklass</dt>
@@ -165,8 +165,8 @@ export function Rapport({ resultat, indata }: { resultat: Analysresultat; indata
         </li>
         <li>
           Knäcklängden ut ur takstolens plan sätts till angivet stagningsavstånd: överram{' '}
-          {tal(indata.stagningOverram, 2)} m, underram {tal(indata.stagningUnderram, 2)} m,
-          diagonaler {tal(indata.stagningDiagonal, 2)} m. Stagningen förutsätts vara utförd.
+          {mm(indata.stagningOverram)} mm, underram {mm(indata.stagningUnderram)} mm,
+          diagonaler {mm(indata.stagningDiagonal)} mm. Stagningen förutsätts vara utförd.
         </li>
         <li>
           Snölastens formfaktorer avser tak utan snöfickor, högre byggnadsdelar intill eller

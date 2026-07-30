@@ -28,7 +28,7 @@ import {
   type StangTyp,
 } from '../domain/geometri';
 import { REFERENSVINDHASTIGHETER, TERRANG_TEXT, type Terrangtyp } from '../domain/vind';
-import { tal } from '../ui/format';
+import { meterTillMillimeter, millimeterTillMeter, mm, tal } from '../ui/format';
 
 interface Props {
   indata: Indata;
@@ -77,6 +77,42 @@ function Falt({
   );
 }
 
+/**
+ * Längdfält som visar och tar emot millimeter medan värdet lagras i meter.
+ * Beräkningskärnan räknar i meter, gränssnittet måttsätter i millimeter.
+ */
+function LangdFalt({
+  etikett,
+  varde,
+  onChange,
+  steg = 50,
+  min,
+  max,
+}: {
+  etikett: string;
+  /** Värde i meter */
+  varde: number;
+  /** Anropas med värdet i meter */
+  onChange: (meter: number) => void;
+  /** Steg i millimeter */
+  steg?: number;
+  /** Gränser i millimeter */
+  min?: number;
+  max?: number;
+}) {
+  return (
+    <Falt
+      etikett={etikett}
+      enhet="mm"
+      varde={meterTillMillimeter(varde)}
+      steg={steg}
+      min={min}
+      max={max}
+      onChange={(v) => onChange(millimeterTillMeter(v))}
+    />
+  );
+}
+
 export function Indatapanel({
   indata,
   anvandaStangtyper,
@@ -120,7 +156,9 @@ export function Indatapanel({
           <p className="hjalptext">{MODELLER.find((m) => m.id === modell)?.beskrivning}</p>
           <p className="hjalptext">
             Vanlig spännvidd:{' '}
-            {MODELLER.find((m) => m.id === modell)?.spannviddsintervall.map((v) => `${v} m`).join(' – ')}
+            {MODELLER.find((m) => m.id === modell)
+              ?.spannviddsintervall.map((v) => `${mm(v)} mm`)
+              .join(' – ')}
           </p>
         </div>
       </details>
@@ -128,13 +166,12 @@ export function Indatapanel({
       <details className="grupp" open>
         <summary>Geometri</summary>
         <div className="grupp-innehall">
-          <Falt
+          <LangdFalt
             etikett="Spännvidd"
-            enhet="m"
             varde={indata.geometri.spannvidd}
-            steg={0.1}
-            min={1}
-            max={30}
+            steg={100}
+            min={1000}
+            max={30000}
             onChange={(v) => uppdateraGeometri({ spannvidd: v })}
           />
           <Falt
@@ -163,13 +200,12 @@ export function Indatapanel({
             />
           )}
           {modell !== 'parallell' && modell !== 'pulpet' && (
-            <Falt
+            <LangdFalt
               etikett="Taksprång"
-              enhet="m"
               varde={indata.geometri.taksprang}
-              steg={0.05}
+              steg={50}
               min={0}
-              max={2}
+              max={2000}
               onChange={(v) => uppdateraGeometri({ taksprang: v })}
             />
           )}
@@ -184,29 +220,27 @@ export function Indatapanel({
             />
           )}
           {visarHanbjalke && (
-            <Falt
+            <LangdFalt
               etikett="Hanbjälkens höjd"
-              enhet="m"
               varde={indata.geometri.hanbjalkeHojd}
-              steg={0.1}
-              min={0.5}
+              steg={100}
+              min={500}
               onChange={(v) => uppdateraGeometri({ hanbjalkeHojd: v })}
             />
           )}
           {visarStodben && (
             <>
-              <Falt
+              <LangdFalt
                 etikett="Stödbenets höjd"
-                enhet="m"
                 varde={indata.geometri.stodbenHojd}
-                steg={0.1}
-                min={0.5}
+                steg={100}
+                min={500}
                 onChange={(v) => uppdateraGeometri({ stodbenHojd: v })}
               />
               <p className="hjalptext">
                 Stödbenen är lodräta och möter sparren, så de hamnar{' '}
-                {tal(stodbensAvstand(indata.geometri), 2)} m från upplaget. Rummets bredd mellan
-                stödbenen blir {tal(rumsbredd(indata.geometri), 2)} m.
+                {mm(stodbensAvstand(indata.geometri))} mm från upplaget. Den fria rumsbredden
+                redovisas under Invändiga mått.
                 {rumsbredd(indata.geometri) < 1.8
                   ? ' Öka taklutningen eller minska stödbenshöjden för ett bredare rum.'
                   : ''}
@@ -225,22 +259,20 @@ export function Indatapanel({
             />
           )}
           {modell === 'parallell' && (
-            <Falt
+            <LangdFalt
               etikett="Konstruktionshöjd"
-              enhet="m"
               varde={indata.geometri.parallellHojd}
-              steg={0.05}
-              min={0.2}
+              steg={50}
+              min={200}
               onChange={(v) => uppdateraGeometri({ parallellHojd: v })}
             />
           )}
-          <Falt
+          <LangdFalt
             etikett="Takstolsavstånd c/c"
-            enhet="m"
             varde={indata.cc}
-            steg={0.05}
-            min={0.3}
-            max={6}
+            steg={50}
+            min={300}
+            max={6000}
             onChange={(v) => uppdatera({ cc: v })}
           />
         </div>
@@ -407,12 +439,11 @@ export function Indatapanel({
                   ))}
                 </select>
               </div>
-              <Falt
+              <LangdFalt
                 etikett="Byggnadens nockhöjd"
-                enhet="m"
                 varde={indata.byggnadshojd}
-                steg={0.5}
-                min={2}
+                steg={500}
+                min={2000}
                 onChange={(v) => uppdatera({ byggnadshojd: v })}
               />
               <p className="hjalptext">
@@ -528,31 +559,28 @@ export function Indatapanel({
       <details className="grupp">
         <summary>Stagning och knäcklängder</summary>
         <div className="grupp-innehall">
-          <Falt
+          <LangdFalt
             etikett="Sidostagning överram"
-            enhet="m"
             varde={indata.stagningOverram}
-            steg={0.1}
-            min={0.1}
+            steg={100}
+            min={100}
             onChange={(v) => uppdatera({ stagningOverram: v })}
           />
           <p className="hjalptext">
             Normalt takläktens avstånd när taket har genomgående läkt eller råspont.
           </p>
-          <Falt
+          <LangdFalt
             etikett="Sidostagning underram"
-            enhet="m"
             varde={indata.stagningUnderram}
-            steg={0.1}
-            min={0.1}
+            steg={100}
+            min={100}
             onChange={(v) => uppdatera({ stagningUnderram: v })}
           />
-          <Falt
+          <LangdFalt
             etikett="Livstag på diagonaler"
-            enhet="m"
             varde={indata.stagningDiagonal}
-            steg={0.1}
-            min={0.1}
+            steg={100}
+            min={100}
             onChange={(v) => uppdatera({ stagningDiagonal: v })}
           />
           <p className="hjalptext">

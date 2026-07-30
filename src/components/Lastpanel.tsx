@@ -1,6 +1,6 @@
 import type { Analysresultat, Indata } from '../domain/analys';
 import { snoPsi } from '../domain/loads';
-import { tal } from '../ui/format';
+import { mm, tal } from '../ui/format';
 
 export function Lastpanel({ resultat, indata }: { resultat: Analysresultat; indata: Indata }) {
   const l = resultat.laster;
@@ -24,7 +24,7 @@ export function Lastpanel({ resultat, indata }: { resultat: Analysresultat; inda
           {tal(l.sno.mu1, 2)} · {tal(l.sno.Ce, 2)} · {tal(l.sno.Ct, 2)} · {tal(l.sno.sk, 2)} ={' '}
           <strong>{tal(l.sno.s, 2)} kN/m²</strong>
         </dd>
-        <dt>Per takstol (c/c {tal(indata.cc, 2)} m)</dt>
+        <dt>Per takstol (c/c {mm(indata.cc)} mm)</dt>
         <dd>{tal(l.snoLinje, 2)} kN/m</dd>
         <dt>Lastvaraktighetsklass</dt>
         <dd>{l.sno.varaktighet === 'lang' ? 'Lång (sk ≥ 3,0 kN/m²)' : 'Medellång'}</dd>
@@ -92,7 +92,7 @@ export function Lastpanel({ resultat, indata }: { resultat: Analysresultat; inda
             <dt>Referensvindhastighet vb</dt>
             <dd>{tal(indata.vb, 0)} m/s</dd>
             <dt>Medelvindhastighet vm(z)</dt>
-            <dd>{tal(l.vind.vm, 1)} m/s vid z = {tal(indata.byggnadshojd, 1)} m</dd>
+            <dd>{tal(l.vind.vm, 1)} m/s vid z = {mm(indata.byggnadshojd)} mm</dd>
             <dt>Turbulensintensitet Iv</dt>
             <dd>{tal(l.vind.Iv, 3)}</dd>
             <dt>Karakteristiskt hastighetstryck qp(z)</dt>

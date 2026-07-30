@@ -19,6 +19,11 @@ export interface Innermatt {
   /** Slutpunkt i modellens koordinatsystem (m) */
   till: { x: number; y: number };
   orientering: 'horisontell' | 'vertikal';
+  /**
+   * Lägg etiketten under måttlinjen. Används för mått som tas omedelbart under
+   * en stång, där utrymmet ovanför linjen är upptaget av virket.
+   */
+  etikettUnder?: boolean;
   kommentar?: string;
 }
 
@@ -81,6 +86,7 @@ function horisontelltMatt(
   xFran: number,
   xTill: number,
   kommentar?: string,
+  etikettUnder = false,
 ): Innermatt | null {
   const varde = xTill - xFran;
   if (!Number.isFinite(varde) || varde < MINSTA_MATT) return null;
@@ -91,6 +97,7 @@ function horisontelltMatt(
     fran: { x: xFran, y },
     till: { x: xTill, y },
     orientering: 'horisontell',
+    etikettUnder,
     kommentar,
   };
 }
@@ -122,7 +129,7 @@ export function beraknaInnermatt(
     matt.push(
       horisontelltMatt(
         'stahojdsbredd',
-        `Bredd vid ${STAHOJD.toFixed(2).replace('.', ',')} m ståhöjd`,
+        `Bredd vid ${(STAHOJD * 1000).toLocaleString('sv-SE')} mm ståhöjd`,
         y,
         x1,
         L - x1,
@@ -159,6 +166,8 @@ export function beraknaInnermatt(
           tak,
           sparrensUndersidaX(tak, alfa, hSparre),
           L - sparrensUndersidaX(tak, alfa, hSparre),
+          undefined,
+          true,
         ),
         horisontelltMatt(
           'bredd_golv',
@@ -202,6 +211,8 @@ export function beraknaInnermatt(
           tak,
           sparrensUndersidaX(tak, alfa, hSparre),
           L - sparrensUndersidaX(tak, alfa, hSparre),
+          undefined,
+          true,
         ),
       );
       break;
@@ -276,7 +287,7 @@ export function beraknaInnermatt(
         matt.push(
           horisontelltMatt(
             'stahojdsbredd',
-            `Bredd vid ${STAHOJD.toFixed(2).replace('.', ',')} m ståhöjd`,
+            `Bredd vid ${(STAHOJD * 1000).toLocaleString('sv-SE')} mm ståhöjd`,
             yMal,
             xMal,
             L,

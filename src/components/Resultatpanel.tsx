@@ -1,7 +1,7 @@
 import type { Analysresultat } from '../domain/analys';
 import { KONTROLL_NAMN } from '../domain/ec5';
 import { STANGTYP_NAMN } from '../domain/geometri';
-import { STATUSFARG, STATUSIKON, STATUSTEXT, statusband, tal } from '../ui/format';
+import { mm, STATUSFARG, STATUSIKON, STATUSTEXT, statusband, tal } from '../ui/format';
 
 function Statusmarke({ utnyttjande, etikett }: { utnyttjande: number; etikett?: string }) {
   const band = statusband(utnyttjande);
@@ -98,7 +98,7 @@ export function Resultatpanel({ resultat }: { resultat: Analysresultat }) {
               <th>Stång</th>
               <th>Typ</th>
               <th>Dimension</th>
-              <th className="num">L (m)</th>
+              <th className="num">L (mm)</th>
               <th className="num">N (kN)</th>
               <th className="num">M (kNm)</th>
               <th className="num">V (kN)</th>
@@ -117,7 +117,7 @@ export function Resultatpanel({ resultat }: { resultat: Analysresultat }) {
                   <td>
                     {s.dimension} {s.kvalitet}
                   </td>
-                  <td className="num">{tal(s.langd, 2)}</td>
+                  <td className="num">{mm(s.langd)}</td>
                   <td className="num">{tal(s.N, 1)}</td>
                   <td className="num">{tal(s.M, 2)}</td>
                   <td className="num">{tal(s.V, 1)}</td>
@@ -214,7 +214,7 @@ export function Resultatpanel({ resultat }: { resultat: Analysresultat }) {
               <thead>
                 <tr>
                   <th>Mått</th>
-                  <th className="num">Fritt mått (m)</th>
+                  <th className="num">Fritt mått (mm)</th>
                   <th>Kommentar</th>
                 </tr>
               </thead>
@@ -222,7 +222,7 @@ export function Resultatpanel({ resultat }: { resultat: Analysresultat }) {
                 {resultat.innermatt.map((m) => (
                   <tr key={m.id}>
                     <td>{m.etikett}</td>
-                    <td className="num">{tal(m.varde, 2)}</td>
+                    <td className="num">{mm(m.varde)}</td>
                     <td style={{ color: 'var(--text-secondary)' }}>{m.kommentar ?? ''}</td>
                   </tr>
                 ))}
@@ -244,7 +244,7 @@ export function Resultatpanel({ resultat }: { resultat: Analysresultat }) {
               <th>Stångtyp</th>
               <th>Dimension</th>
               <th>Kvalitet</th>
-              <th className="num">Längd (m)</th>
+              <th className="num">Längd (mm)</th>
               <th className="num">Volym (m³)</th>
             </tr>
           </thead>
@@ -256,7 +256,7 @@ export function Resultatpanel({ resultat }: { resultat: Analysresultat }) {
                   <td>{STANGTYP_NAMN[v.typ]}</td>
                   <td>{v.dimension} mm</td>
                   <td>{v.kvalitet}</td>
-                  <td className="num">{tal(v.langd, 2)}</td>
+                  <td className="num">{mm(v.langd)}</td>
                   <td className="num">{tal((b / 1000) * (h / 1000) * v.langd, 4)}</td>
                 </tr>
               );
@@ -266,10 +266,7 @@ export function Resultatpanel({ resultat }: { resultat: Analysresultat }) {
                 Summa
               </td>
               <td className="num" style={{ fontWeight: 600 }}>
-                {tal(
-                  resultat.virkesatgang.reduce((s, v) => s + v.langd, 0),
-                  2,
-                )}
+                {mm(resultat.virkesatgang.reduce((s, v) => s + v.langd, 0))}
               </td>
               <td className="num" style={{ fontWeight: 600 }}>
                 {tal(
