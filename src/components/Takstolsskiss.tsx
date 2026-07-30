@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Analysresultat } from '../domain/analys';
 import type { Nod, Stang, TakstolGeometri } from '../domain/geometri';
 import { STANGTYP_NAMN } from '../domain/geometri';
-import { STATUSFARG, statusband, tal } from '../ui/format';
+import { mm, STATUSFARG, statusband, tal } from '../ui/format';
 
 export type Visningslage = 'utnyttjande' | 'normalkraft' | 'moment' | 'tvarkraft' | 'deformation' | 'laster';
 
@@ -16,12 +16,13 @@ export const VISNINGSLAGEN: { id: Visningslage; namn: string }[] = [
 ];
 
 const BREDD = 1000;
-const MARGINAL = { topp: 54, hoger: 120, botten: 84, vanster: 90 };
+const MARGINAL = { topp: 54, hoger: 158, botten: 84, vanster: 90 };
 
 interface Props {
   resultat: Analysresultat;
   lage: Visningslage;
   visaBeteckningar: boolean;
+  visaInnermatt: boolean;
 }
 
 interface Ritdata {
@@ -155,7 +156,69 @@ function Mattlinje({
   );
 }
 
-export function Takstolsskiss({ resultat, lage, visaBeteckningar }: Props) {
+/**
+ * Invändigt fritt mått, ritat inuti takstolen med måttpilar i båda ändar.
+ * Ritas i en egen färg så att det inte förväxlas med yttermåtten.
+ */
+function Innermattlinje({
+  x1,
+  y1,
+  x2,
+  y2,
+  text,
+  vertikal,
+  etikettUnder = false,
+}: {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  text: string;
+  vertikal: boolean;
+  /** Lägg etiketten under måttlinjen i stället för över */
+  etikettUnder?: boolean;
+}) {
+  // Stängernas egna etiketter sitter alltid på mittpunkten, så måttetiketten
+  // läggs en bit vid sidan om för att inte hamna ovanpå dem
+  const mx = vertikal ? (x1 + x2) / 2 : x1 + 0.34 * (x2 - x1);
+  const my = vertikal ? (y1 + y2) / 2 : (y1 + y2) / 2;
+  const pil = 4.5;
+  return (
+    <g stroke="var(--series-3)" strokeWidth={1.2} fill="none">
+      <line x1={x1} y1={y1} x2={x2} y2={y2} />
+      {/* Ändmarkeringar vinkelrätt mot måttlinjen */}
+      {[
+        [x1, y1],
+        [x2, y2],
+      ].map(([px, py], i) => (
+        <line
+          key={i}
+          x1={vertikal ? px - pil : px}
+          y1={vertikal ? py : py - pil}
+          x2={vertikal ? px + pil : px}
+          y2={vertikal ? py : py + pil}
+        />
+      ))}
+      <text
+        x={vertikal ? mx + 7 : mx}
+        y={vertikal ? my : my + (etikettUnder ? 13 : -5)}
+        textAnchor={vertikal ? 'start' : 'middle'}
+        dominantBaseline={vertikal ? 'middle' : 'auto'}
+        fill="var(--series-3)"
+        stroke="var(--surface-1)"
+        strokeWidth={2.8}
+        paintOrder="stroke"
+        fontSize={11}
+        fontWeight={600}
+        fontFamily="var(--font)"
+      >
+        {text}
+      </text>
+    </g>
+  );
+}
+
+export function Takstolsskiss({ resultat, lage, visaBeteckningar, visaInnermatt }: Props) {
   const geo = resultat.geometri;
   const [hovrad, setHovrad] = useState<string | null>(null);
   const r = useMemo(() => ritdataFor(geo), [geo]);
@@ -304,7 +367,7 @@ export function Takstolsskiss({ resultat, lage, visaBeteckningar }: Props) {
       className="skiss"
       viewBox={`0 0 ${BREDD} ${r.hojd}`}
       role="img"
-      aria-label={`Skiss av ${geo.modell} med spännvidd ${tal(geo.spannvidd, 2)} meter`}
+      aria-label={`Skiss av ${geo.modell} med spännvidd ${mm(geo.spannvidd)} millimeter`}
     >
       {/* Marklinje vid upplagen */}
       <line
@@ -378,7 +441,7 @@ export function Takstolsskiss({ resultat, lage, visaBeteckningar }: Props) {
         y1={mattY}
         x2={r.X(hogerUpplag.x)}
         y2={mattY}
-        text={`Spännvidd ${tal(geo.spannvidd, 2)} m`}
+        text={`Spännvidd ${mm(geo.spannvidd)} mm`}
       />
       <g stroke="var(--gridline)" strokeWidth={0.8}>
         <line x1={r.X(nockNod.x)} y1={r.Y(nockNod.y)} x2={hojdmattX + 6} y2={r.Y(nockNod.y)} />
@@ -394,7 +457,7 @@ export function Takstolsskiss({ resultat, lage, visaBeteckningar }: Props) {
         y1={r.Y(nockNod.y)}
         x2={hojdmattX}
         y2={r.Y(vansterUpplag.y)}
-        text={`h = ${tal(geo.nockhojd, 2)} m`}
+        text={`h = ${mm(geo.nockhojd)} mm`}
         lodrat
       />
 
@@ -418,6 +481,21 @@ export function Takstolsskiss({ resultat, lage, visaBeteckningar }: Props) {
           {tal(lutningGrader, 0)}°
         </text>
       </g>
+
+      {/* Invändiga fria mått */}
+      {visaInnermatt &&
+        resultat.innermatt.map((m) => (
+          <Innermattlinje
+            key={m.id}
+            x1={r.X(m.fran.x)}
+            y1={r.Y(m.fran.y)}
+            x2={r.X(m.till.x)}
+            y2={r.Y(m.till.y)}
+            text={`${mm(m.varde)} mm`}
+            vertikal={m.orientering === 'vertikal'}
+            etikettUnder={m.etikettUnder ?? false}
+          />
+        ))}
 
       {/* Beteckningar */}
       {visaBeteckningar &&
@@ -467,7 +545,7 @@ export function Takstolsskiss({ resultat, lage, visaBeteckningar }: Props) {
           />
           <text x={22} y={24} fontSize={12} fontWeight={600} fill="var(--text-primary)" fontFamily="var(--font)">
             {hovradStang.namn} · {STANGTYP_NAMN[hovradStang.typ]} · {hovradKontroll.dimension}{' '}
-            {hovradKontroll.kvalitet} · L = {tal(hovradKontroll.langd, 2)} m
+            {hovradKontroll.kvalitet} · L = {mm(hovradKontroll.langd)} mm
           </text>
           <text x={22} y={38} fontSize={11} fill="var(--text-secondary)" fontFamily="var(--font)">
             N = {tal(hovradKontroll.N, 1)} kN · M = {tal(hovradKontroll.M, 2)} kNm · V ={' '}

@@ -60,6 +60,7 @@ export default function App() {
   const [flik, setFlik] = useState<Flik>('skiss');
   const [lage, setLage] = useState<Visningslage>('utnyttjande');
   const [visaBeteckningar, setVisaBeteckningar] = useState(true);
+  const [visaInnermatt, setVisaInnermatt] = useState(false);
 
   useEffect(() => {
     try {
@@ -191,12 +192,22 @@ export default function App() {
                       />
                       Beteckningar
                     </label>
+                    <label className="checkbox-rad">
+                      <input
+                        type="checkbox"
+                        checked={visaInnermatt}
+                        onChange={(e) => setVisaInnermatt(e.target.checked)}
+                        disabled={resultat.innermatt.length === 0}
+                      />
+                      Invändiga mått
+                    </label>
                   </div>
 
                   <Takstolsskiss
                     resultat={resultat}
                     lage={lage}
                     visaBeteckningar={visaBeteckningar}
+                    visaInnermatt={visaInnermatt}
                   />
 
                   <div className="legend">
@@ -252,6 +263,17 @@ export default function App() {
                       <span className="legend-post">
                         Pilarna visar var taklast (egentyngd och snö) angriper. Storleken redovisas
                         under fliken Laster.
+                      </span>
+                    )}
+                    {visaInnermatt && (
+                      <span className="legend-post">
+                        <span
+                          className="legend-prick"
+                          style={{ background: 'var(--series-3)' }}
+                          aria-hidden="true"
+                        />
+                        Invändiga mått är fria mått mellan virkets ytor, utan golv, undertak
+                        eller isolering.
                       </span>
                     )}
                     <span className="legend-post" style={{ marginLeft: 'auto' }}>
